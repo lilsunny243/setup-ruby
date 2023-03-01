@@ -468,10 +468,8 @@ function getImageOS() {
 }
 
 const supportedPlatforms = [
-  'ubuntu-18.04',
   'ubuntu-20.04',
   'ubuntu-22.04',
-  'macos-10.15',
   'macos-11',
   'macos-12',
   'windows-2019',
