@@ -80,7 +80,7 @@ export async function installBundler(bundlerVersionInput, rubygemsInputSet, lock
 
   if (bundlerVersion === 'default') {
     if (common.isBundler2dot2Default(engine, rubyVersion)) {
-      if (common.windows && engine === 'ruby' && (common.isStableVersion(rubyVersion) || rubyVersion === 'head')) {
+      if (common.windows && engine === 'ruby' && (common.isStableVersion(engine, rubyVersion) || rubyVersion === 'head')) {
         // https://github.com/ruby/setup-ruby/issues/371
         console.log(`Installing latest Bundler for ${engine}-${rubyVersion} on Windows because bin/bundle does not work in bash otherwise`)
         bundlerVersion = 'latest'
@@ -191,7 +191,8 @@ export async function bundleInstall(gemfile, lockFile, platform, engine, rubyVer
   // restore cache & install
   let cachedKey = null
   try {
-    cachedKey = await cache.restoreCache(paths, key, restoreKeys)
+    // .slice() to workaround https://github.com/actions/toolkit/issues/1377
+    cachedKey = await cache.restoreCache(paths.slice(), key, restoreKeys)
   } catch (error) {
     if (error.name === cache.ValidationError.name) {
       throw error;
@@ -235,7 +236,7 @@ async function computeBaseKey(platform, engine, version, lockFile, cacheVersion)
   const cwd = process.cwd()
   const bundleWith = process.env['BUNDLE_WITH'] || ''
   const bundleWithout = process.env['BUNDLE_WITHOUT'] || ''
-  let key = `setup-ruby-bundler-cache-v5-${platform}-${engine}-${version}-wd-${cwd}-with-${bundleWith}-without-${bundleWithout}`
+  let key = `setup-ruby-bundler-cache-v6-${common.getOSNameVersionArch()}-${engine}-${version}-wd-${cwd}-with-${bundleWith}-without-${bundleWithout}`
 
   if (cacheVersion !== DEFAULT_CACHE_VERSION) {
     key += `-v-${cacheVersion}`

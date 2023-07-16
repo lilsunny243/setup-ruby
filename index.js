@@ -16,6 +16,7 @@ const inputDefaults = {
   'bundler-cache': 'false',
   'working-directory': '.',
   'cache-version': bundler.DEFAULT_CACHE_VERSION,
+  'self-hosted': 'false',
 }
 
 // entry point when this action is run on its own
@@ -39,6 +40,7 @@ export async function setupRuby(options = {}) {
       inputs[key] = core.getInput(key) || inputDefaults[key]
     }
   }
+  common.inputs.selfHosted = inputs['self-hosted']
 
   process.chdir(inputs['working-directory'])
 
@@ -46,7 +48,7 @@ export async function setupRuby(options = {}) {
   const [engine, parsedVersion] = parseRubyEngineAndVersion(inputs['ruby-version'])
 
   let installer
-  if (platform.startsWith('windows-') && engine === 'ruby') {
+  if (platform.startsWith('windows-') && engine === 'ruby' && !common.isSelfHostedRunner()) {
     installer = require('./windows')
   } else {
     installer = require('./ruby-builder')
@@ -60,7 +62,7 @@ export async function setupRuby(options = {}) {
 
   // JRuby can use compiled extension code, so make sure gcc exists.
   // As of Jan-2022, JRuby compiles against msvcrt.
-  if (platform.startsWith('windows') && (engine === 'jruby') && 
+  if (platform.startsWith('windows') && engine === 'jruby' &&
     !fs.existsSync('C:\\msys64\\mingw64\\bin\\gcc.exe')) {
     await require('./windows').installJRubyTools()
   }
@@ -143,7 +145,7 @@ function validateRubyEngineAndVersion(platform, engineVersions, engine, parsedVe
   if (!engineVersions.includes(parsedVersion)) {
     const latestToFirstVersion = engineVersions.slice().reverse()
     // Try to match stable versions first, so an empty version (engine-only) matches the latest stable version
-    let found = latestToFirstVersion.find(v => common.isStableVersion(v) && v.startsWith(parsedVersion))
+    let found = latestToFirstVersion.find(v => common.isStableVersion(engine, v) && v.startsWith(parsedVersion))
     if (!found) {
       // Exclude head versions, they must be exact matches
       found = latestToFirstVersion.find(v => !common.isHeadVersion(v) && v.startsWith(parsedVersion))
